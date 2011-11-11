@@ -83,7 +83,7 @@ RULES = {
 
 TAGTYPE_WIDTH = 3
 TAG_WIDTH = 20
-PROCESS_WIDTH = 8 # 8 or -1
+PROCESS_WIDTH = 5 # 8 or -1
 HEADER_SIZE = TAGTYPE_WIDTH + 1 + TAG_WIDTH + 1 + PROCESS_WIDTH + 1
 
 TAGTYPES = {
@@ -94,7 +94,7 @@ TAGTYPES = {
     "E": "%s%s%s " % (format(fg=BLACK, bg=RED), "E".center(TAGTYPE_WIDTH), format(reset=True)),
 }
 
-retag = re.compile("^([A-Z])/([^\(]+)\(([^\)]+)\): (.*)$")
+retag = re.compile("^(\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3} )?([A-Z])/([^\(]+)\(([^\)]+)\): (.*)$")
 
 # to pick up -d or -e
 adb_args = ' '.join(sys.argv[1:])
@@ -105,6 +105,7 @@ if os.isatty(sys.stdin.fileno()):
 else:
     input = sys.stdin
 
+first_time = True
 while True:
     try:
         line = input.readline()
@@ -113,8 +114,16 @@ while True:
 
     match = retag.match(line)
     if not match is None:
-        tagtype, tag, owner, message = match.groups()
+        time, tagtype, tag, owner, message = match.groups()
         linebuf = StringIO.StringIO()
+
+        # time
+        if time:
+            time = time.strip()
+            if first_time:
+                HEADER_SIZE += len(time) + 1
+                first_time = False
+            linebuf.write("%s%s%s " % (format(fg=WHITE, bright=True), time, format(reset=True)))
 
         # center process info
         if PROCESS_WIDTH > 0:
